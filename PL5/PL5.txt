@@ -1,0 +1,140 @@
+1.)
+
+a) Instale a biblioteca necess·ria para controlo de quotas (sugestão: fazer uma pesquisa dos pacotes com quota no nome).
+
+	- Installing the Quota Tools:
+		-> sudo apt update
+		-> sudo apt install quota
+			- version 4.04
+
+	- Installing the Quota Kernel Module:
+		-> sudo apt install linux-image-extra-virtual (caso nao haja os modulos)
+		-> find /lib/modules/`uname -r` -type f -name '*quota_v*.ko*'
+			Output
+			/lib/modules/4.15.0-45-generic/kernel/fs/quota/quota_v1.ko
+			/lib/modules/4.15.0-45-generic/kernel/fs/quota/quota_v2.ko
+
+b) Ative o suporte de quota de utilizadores e grupos na home directory dos utilizadores (sugestãoo: man mount). Remonte a partição após as alteraÁıes necess·rias para 
+ativar as quotas nessa partiçãoo (sugestão: man mount).
+
+	- Para ativar quotas num sistema de arquivos especÌfico, precisamos montar-lo com algumas opções relacionadas a quotas especificadas. Fazemos isso atualizando a entrada do 
+	sistema de arquivos no arquivo de configuração /etc/fstab.
+
+		-> Formato do ficheiro: DEVICE  MOUNT_POINT  FILE_SYSTEM_TYPE  OPTIONS  BACKUP_OPERATION  FILE_SYSTEM_CHECK_ORDER
+			--DEVICE: nome do dispositivo que vai montar as quotas.
+			--MOUNT_POINT: o diretório em que a partição ou o disco será montado.
+			--FILE_SYSTEM_TYPE: filesystem type
+			--OPTIONS: A maioria dos sistemas de arquivos suporta várias opções de montagem, que modificam como o kernel trata o sistema de arquivos.
+			--BACKUP_OPERATION: 1 se o utilitário de despejo (dump utility) deve fazer backup de uma partição ou 0 se não deve. Se nunca se quiser usar o programa de backup
+				 de despejo, poder· ignorar esta opção.
+			--FILE_SYSTEM_CHECK_ORDER: especifica a ordem na qual o fsck verifica se h· erros no dispositivo/partição no momento da inicialização. Um 0 significa que o fsck 
+				não deve verificar um sistema de arquivos. Números mais altos representam a ordem de verificação. A partição raiz deve ter o valor 1 e todas as outras 
+				que precisam ser verificadas devem ter o valor 2.
+
+c) Efectue a contabilização inicial das quotas (sugestão: man quotacheck).
+...
+
+d) Defina as quotas para os utilizadores:
+	- sudo quotacheck -ugm /
+
+	- Este comando cria os ficheiros /aquota.user e /aquota.group. Esses ficheiros contém informações sobre os limites e o uso do filesystem e precisam de existir antes de ativar 
+		o monitoramento de cotas. Os parámetros de quotacheck que usamos são:
+
+		-> u: especifica que um arquivo de cota baseado no usuário deve ser criado
+		-> g: indica que um arquivo de cota baseado em grupo deve ser criado
+		-> m: desabilita a remontagem do filesystem como somente leitura ao executar a contagem inicial de quotas. Remontar o filesystem como somente leitura 
+			fornecer· resultados mais precisos caso um usuário esteja salvando ficheiros ativamente durante o processo, mas não seja necess·rio durante esta 
+			configuração inicial.
+
+	i. luser1 (via edquota): block soft: 100; block hard: 105;
+		-> sudo edquota -u USERNAME
+
+		Abre ficheiro para editar:
+		Disk quotas for user USERNAME (uid XXXX):
+  		Filesystem                   blocks       soft       hard     inodes     soft     hard
+  		/dev/sda3(DRIVE)                  0        100        105          0        0        0
+
+	ii. luser2 (via setquota): block soft: 400; block hard: 450;
+		-> sudo setquota -u USERNAME SOFT_BLOCK HARD_BOCK SOFT_INODES HARD_INODES /
+
+
+	iii. luser3: copiadas do luser1 (via setquota).
+		-> sudo setquota -u USERNAME SOFT_BLOCK HARD_BOCK SOFT_INODES HARD_INODES /
+
+
+e) Visualize as cotas utilizador a utilizador (sugestão: man quota).
+	- sudo quota -vs USERNAME
+
+f) Visualize as cotas de todos os utilizadores numa única operação (sugestão: man repquota).
+	- sudo repquota -vs /
+
+============================ x ===============================
+
+4.)
+
+	versão antiga -> sudo nano /etc/network/interfaces
+
+	configuração manual usada -> sudo nano /etc/netplan/50-cloud-init.yaml
+	comando para apresentar interfaces activas e desactivadas -> ip addr show 
+
+a)	
+	ativar interface secundária -> sudo ip link set dev ens192 up
+
+b)
+	configuração da interface foi feita manualmente pelo ficheiro 50-cloud-init.yaml
+
+	ens192:
+		dhcp4: no
+		dhcp6: no
+		addresses: [ 192.168.5.19/24 ]
+
+c)	
+	Grupo A:
+
+	man sysctl - informações do sysctl
+
+	Ver se encaminhamento está ativo: 
+		sudo  sysctl net.ipv4.ip_forward
+				ou
+		cat /proc/sys/net/ipv4/ip_forward
+
+	Resultado:
+		sudo  net.ipv4.ip_forward = 0
+
+	Ativar encaminhamento: 
+		sudo sysctl -w net.ipv4.ip_forward=1 (temporário)
+
+		sudo nano /etc/sysctl.conf
+
+			
+			net.ipv4.ip_forward = 1 (conteudo a colocar no sysctl.conf)
+		
+		sudo sysctl -p /etc/sysctl.conf(ativar configuracao efetuada)
+
+		sudo iptables -t nat -A POSTROUTING -o ens160 -j SNAT --to-source 10.9.10.19
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
